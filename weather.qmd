@@ -17,6 +17,75 @@ library(sf)
 ```{r}
 # Read in data
 
-st_read('')
-rast(raster files)
+rast1 <- rast('data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif')
+rast2 <- rast('data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif')
+rast3 <- rast('data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif')
+rast4 <- rast('data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif')
+
 ```
+```{r}
+ext(rast1) # 02-07
+ext(rast2) # 02-07
+ext(rast3) # 02-16
+ext(rast4) # 02-16
+```
+
+## Find locations that experienced a blackout by creating a mask
+
+```{r}
+# Combine rasters for each date 2021-02-07 and 2021-02-16
+
+if (crs(rast1) == crs(rast2)) {
+    print('CRSs match!')
+} else{
+    warning('CRSs do not match')
+}
+
+lights0207 <- merge(rast1,rast2)
+
+lights0216 <- merge(rast3,rast4)
+
+# Reclassify the difference raster, assuming that any location that experienced a drop of more than 20 nW cm-2sr-1 experienced a blackout
+
+lightdif <- lights0216 - lights0207
+lightdif[lightdif > -200] <- NA 
+lightdif[not.na(lightdif)] <- 1
+
+# assign NA to all locations that experienced a drop of less than 200 nW cm-2sr-1 change
+
+# vectorize the blackout mask using st_as_as() and fix any invalid geometries with st_make_valid()
+
+vectlight <- as.polygons(crop(lightdif,ext(-96.5,-94.5,29,30.5))) |> 
+    st_as_sf() |> 
+    st_make_valid()
+
+# crop (saptiall subset) the blackout mask to the Houston area as defined by the following coordinates 
+# (-96.5, 29), (-96.5, 30.5), (-94.5, 30.5), (-94.5, 29)
+plot(vectlight)
+# re-project the cropped blackout dataset to EPSG:3083 (NAD83 / Texas Centric Albers Equal Area)
+
+# Exclude highways from the cropped blackout mask
+
+# identify areas within 200m of all highways, might have to us st_union
+
+# find areas that experienced blackouts that are further than 200m from a highway
+
+# use SQL querey in st_read to only get highways and not other roads
+
+# "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'"
+
+# identify the number of homes likely impacted by blackouts
+
+# use SQL query in st_read to only get houses
+
+"SELECT *
+FROM gis_osm_buildings_a_free_1`
+WHERE (type IS NULL AND name IS NULL)`
+OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')"
+```
+
+## Exclude highways from analysis
+
+
+
+## Identify homes that experienced blackouts by combining the locations of homes and blackouts
