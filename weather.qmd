@@ -1,0 +1,22 @@
+---
+
+---
+
+## Read in the data libraries and data
+```{r}
+# Read in libraries
+
+library(tidyverse)
+library(terra)
+library(tmap)
+library(here)
+library(sf)
+```
+
+
+```{r}
+# Read in data
+
+st_read('')
+rast(raster files)
+```
