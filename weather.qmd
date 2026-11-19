@@ -22,6 +22,10 @@ rast2 <- rast('data/VNP46A1/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.ti
 rast3 <- rast('data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif')
 rast4 <- rast('data/VNP46A1/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif')
 
+highways <- st_read(here('data','gis_osm_roads_free_1.gpkg','gis_osm_roads_free_1.gpkg'), query = "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'")
+
+houses <- st_read(here('data','gis_osm_buildings_a_free_1.gpkg','gis_osm_buildings_a_free_1.gpkg')) |> 
+    filter(type %in% c('residential','apartments','house','static_caravan','detached'))
 ```
 ```{r}
 ext(rast1) # 02-07
@@ -53,22 +57,25 @@ lightdif[not.na(lightdif)] <- 1
 
 # assign NA to all locations that experienced a drop of less than 200 nW cm-2sr-1 change
 
-# vectorize the blackout mask using st_as_as() and fix any invalid geometries with st_make_valid()
+# vectorize the blackout mask using st_as_as() and fix any invalid geometries with st_make_valid(), and crop
 
 vectlight <- as.polygons(crop(lightdif,ext(-96.5,-94.5,29,30.5))) |> 
     st_as_sf() |> 
     st_make_valid()
 
-# crop (saptiall subset) the blackout mask to the Houston area as defined by the following coordinates 
-# (-96.5, 29), (-96.5, 30.5), (-94.5, 30.5), (-94.5, 29)
-plot(vectlight)
 # re-project the cropped blackout dataset to EPSG:3083 (NAD83 / Texas Centric Albers Equal Area)
 
-# Exclude highways from the cropped blackout mask
+vectlight <- st_transform(vectlight, crs('EPSG:3083'))
 
-# identify areas within 200m of all highways, might have to us st_union
+# Exclude area 200ms away from highways from the cropped blackout mask
 
-# find areas that experienced blackouts that are further than 200m from a highway
+highways = st_transform(highways, crs = crs(vectlight))
+crs(highways) == crs(vectlight)
+buffhighway <- st_buffer(highways, dist = 200)
+
+buffhighway <- st_union(buffhighway)
+
+lightwithouthighways <- st_difference(vectlight, buffhighway)
 
 # use SQL querey in st_read to only get highways and not other roads
 
@@ -82,6 +89,7 @@ plot(vectlight)
 FROM gis_osm_buildings_a_free_1`
 WHERE (type IS NULL AND name IS NULL)`
 OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')"
+
 ```
 
 ## Exclude highways from analysis
