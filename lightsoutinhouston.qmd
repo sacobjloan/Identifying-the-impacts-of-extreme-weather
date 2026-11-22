@@ -106,17 +106,21 @@ blackouthouses <- st_filter(x = houses, y = lightwithouthighways, .predicate = s
 ```{r}
 # Map of before
 
-before <- tm_shape(lights0207) + 
+before <- tm_shape(crop(lights0207,ext(-96.5,-94.5,29,30.5))) + 
     tm_raster(col.scale = tm_scale_rank(values = 'greys'),
     col.legend = tm_legend(position = tm_pos_in('center','bottom'))) +
 tm_title('Before Storms')
 
 # Map of after
 
-after <- tm_shape(lights0216) + 
+after <- tm_shape(crop(lights0216,ext(-96.5,-94.5,29,30.5))) + 
     tm_raster(col.scale = tm_scale_rank(values = 'greys'),
     col.legend = tm_legend(position = tm_pos_in('center','bottom'))) +
     tm_title('After Storms')
+
+# Map of the difference
+
+difference <- tm_shape()
 
 tmap_arrange(before, after, nrow = 1, asp = 0)
 
@@ -127,6 +131,12 @@ tmap_arrange(before, after, nrow = 1, asp = 0)
 
 ```{r}
 # Map of houses that lost power
+
+tm_shape(blackouthouses) +
+    tm_polygons(fill = 'green') +
+tm_basemap('OpenStreetMap') +
+tm_compass(position = tm_pos_in('right','bottom'))+
+tm_scalebar(position = tm_pos_in('center','bottom'))
 ```
 
 ```{r}
